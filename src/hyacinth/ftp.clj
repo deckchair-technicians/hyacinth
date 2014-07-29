@@ -76,7 +76,8 @@
     (with-temp-dir
       [dir "hyacinth"]
       (let [file (to-file dir obj)]
-        (mkdirs channel (parent location-key))
+        (when-let [parent-dir (parent location-key)]
+          (mkdirs channel parent-dir))
         (sftp channel {} :put file location-key)
         this)))
 
