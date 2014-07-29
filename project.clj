@@ -1,4 +1,4 @@
-(defproject hyacinth "0.1.0-SNAPSHOT"
+(defproject com.callisto/hyacinth "0.1.0-SNAPSHOT"
 
   :description "Bucket abstraction over S3, FTP, file, memory map"
 
