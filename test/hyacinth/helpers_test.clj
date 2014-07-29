@@ -9,4 +9,5 @@
             to (relative (->memory-bucket buckets-atom "to") "file")]
         (put! from "hello")
         (copy-location from to)
+        (slurp (get-stream to)) => "hello"
         (slurp (get-stream to)) => "hello"))

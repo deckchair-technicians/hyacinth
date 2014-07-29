@@ -33,7 +33,7 @@
       (put! [this obj]
         (let [stream (ByteArrayOutputStream.)]
           (io/copy (coerce-to-streamable obj) stream)
-          (swap! buckets-atom #(assoc-in % key-path (ByteArrayInputStream. (.toByteArray stream)))))
+          (swap! buckets-atom #(assoc-in % key-path (.toByteArray stream))))
         this)
 
       (delete! [this]
@@ -42,8 +42,8 @@
 
       (get-stream [this]
         (let [content (get-in @buckets-atom key-path)]
-          (if (instance? ByteArrayInputStream content)
-            content
+          (if content
+            (ByteArrayInputStream. content)
             (throw (IOException. (str "No data for " path))))))
 
       (child-keys [this]
