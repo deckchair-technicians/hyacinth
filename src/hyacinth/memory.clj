@@ -62,7 +62,7 @@
       Object
       (toString [this] (str "MemoryBucket '" path "'")))))
 
-(defn memory-bucket
+(defn ->memory-bucket
   [buckets-atom bucket-name]
   (assert buckets-atom)
   (assert bucket-name)

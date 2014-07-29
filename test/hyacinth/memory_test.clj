@@ -6,4 +6,4 @@
              [memory :refer :all]]))
 
 (facts "memory buckets work"
-       (check-contract (memory-bucket (atom {}) "root-bucket")))
+       (check-contract (->memory-bucket (atom {}) "root-bucket")))
