@@ -1,5 +1,5 @@
 (ns hyacinth.protocol
-  (:import (java.io Reader InputStream File ByteArrayInputStream)))
+  (:import (java.io Reader InputStream File ByteArrayInputStream InputStreamReader)))
 
 (defmulti coerce-to-streamable class)
 (defmethod coerce-to-streamable String [s]
@@ -25,6 +25,9 @@
 
 (defn children [location]
   (map #(relative location %) (child-keys location)))
+
+(defn copy-location [from to]
+  (put! to (InputStreamReader. (get-stream from))))
 
 (defn recursive-delete! [location]
   (doseq [child (children location)]
