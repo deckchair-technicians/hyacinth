@@ -41,10 +41,9 @@
         nil)
 
       (get-stream [this]
-        (let [content (get-in @buckets-atom key-path)]
-          (if content
-            (ByteArrayInputStream. content)
-            (throw (IOException. (str "No data for " path))))))
+        (if (has-data? this)
+          (ByteArrayInputStream. (get-in @buckets-atom key-path))
+          (throw (IOException. (str "No data for " path)))))
 
       (child-keys [this]
         (or (get-child-keys buckets-atom path) []))
@@ -56,8 +55,7 @@
         (memory-location buckets-atom (.getPath (File. path relative-key))))
 
       (has-data? [this]
-        (instance? ByteArrayInputStream
-                   (get-in @buckets-atom key-path)))
+        (instance? (Class/forName "[B") (get-in @buckets-atom key-path)))
 
       Object
       (toString [this] (str "MemoryBucket '" path "'")))))
