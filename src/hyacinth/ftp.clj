@@ -1,7 +1,9 @@
 (ns hyacinth.ftp
-  (:require [clojure.java.io :as io]
+  (:require [clj-ssh.ssh :as ssh]
+            [clj-ssh.cli :as cli]
+
+            [clojure.java.io :as io]
             [clojure.zip :as zip]
-            [clj-ssh.ssh :refer [sftp]]
             [me.raynes.fs :as fs]
             [clojure.string :as s]
             [hyacinth
@@ -19,49 +21,52 @@
       (s/replace (re-pattern (str "^" (Pattern/quote base))) "")
       (s/replace #"^/" "")))
 
-(defn exists? [channel path]
+(defn exists? [ftp path]
   (try
-    (sftp channel {} :stat path)
+    (ftp :stat path)
     true
     (catch Throwable t
       (if (= ChannelSftp/SSH_FX_NO_SUCH_FILE (.id t))
         false
         (throw t)))))
 
-(defn is-directory? [channel path]
-  (.isDir (sftp channel {} :stat path)))
+(defn is-directory? [ftp path]
+  (try
+    (.isDir (ftp :stat path))
+    (catch Exception e
+      (throw e))))
 
 (defn parts [path]
   (if (parent path)
     (conj (parts (parent path)) path)
     [path]))
 
-(defn mkdirs [channel dir]
+(defn mkdirs [ftp dir]
   (let [parts (parts dir)]
     (doseq [part parts]
-      (when-not (exists? channel part)
-        (sftp channel {} :mkdir part)))))
+      (when-not (exists? ftp part)
+        (ftp :mkdir part)))))
 
-(defn get-child-keys [channel path]
+(defn get-child-keys [ftp path]
   (if path
-    (when (is-directory? channel path)
-      (->> (sftp channel {} :ls path)
+    (when (is-directory? ftp path)
+      (->> (ftp :ls path)
            (map #(.getFilename %))
            (remove #(#{"." ".."} %))))
-    (map #(.getFilename %) (sftp channel {} :ls))))
+    (map #(.getFilename %) (ftp :ls))))
 
-(defn get-descendant-keys [channel root]
-  (when (is-directory? channel root)
+(defn get-descendant-keys [ftp root]
+  (when (is-directory? ftp root)
     (let [entries (->> (if root
-                         (sftp channel {} :ls root)
-                         (sftp channel {} :ls))
+                         (ftp :ls root)
+                         (ftp :ls))
                        (remove #(#{"." ".."} (filename (.getFilename %)))))]
       (->> entries
            (mapcat (fn [entry]
-                     (let [path (->path root (.getFilename entry))]
+                     (let [path (join-paths root (.getFilename entry))]
                        (if (.isDir (.getAttrs entry))
                          (cons path
-                               (map #(->path path %) (get-descendant-keys channel path)))
+                               (map #(join-paths path %) (get-descendant-keys ftp path)))
                          [path]))))
            (map #(relative-path root %)))
       )))
@@ -70,22 +75,22 @@
 ; ======================================================
 
 (declare ->ftp-location)
-(deftype FtpLocation [channel location-key]
+(deftype FtpLocation [ftp location-key]
   BucketLocation
   (put! [this obj]
     (with-temp-dir
       [dir "hyacinth"]
       (let [file (to-file dir obj)]
         (when-let [parent-dir (parent location-key)]
-          (mkdirs channel parent-dir))
-        (sftp channel {} :put file location-key)
+          (mkdirs ftp parent-dir))
+        (ftp :put file location-key)
         this)))
 
   (delete! [this]
     (try
-      (if (is-directory? channel location-key)
-        (sftp channel {} :rmdir location-key)
-        (sftp channel {} :rm location-key))
+      (if (is-directory? ftp location-key)
+        (ftp :rmdir location-key)
+        (ftp :rm location-key))
       (catch SftpException e
         (if (= ChannelSftp/SSH_FX_NO_SUCH_FILE (.id e))
           nil
@@ -97,36 +102,36 @@
       [dir "hyacinth"]
       (let [file (File. dir "forstreaming")]
         (try
-          (sftp channel {} :get location-key (.getAbsolutePath file))
+          (ftp :get location-key (.getAbsolutePath file))
           (catch Throwable t
             (throw (IOException. (str "Could not get " location-key) t))))
 
         (io/input-stream file))))
 
   (child-keys [this]
-    (get-child-keys channel location-key))
+    (get-child-keys ftp location-key))
 
   (descendant-keys [this]
-    (get-descendant-keys channel location-key))
+    (get-descendant-keys ftp location-key))
 
   (relative [this relative-key]
     (assert (string? relative-key) (str "class:" (class relative-key)
                                         " value: " relative-key))
 
-    (->ftp-location channel (->path location-key relative-key)))
+    (->ftp-location ftp (join-paths location-key relative-key)))
 
   (has-data? [this]
-    (and (exists? channel location-key)
-         (not (is-directory? channel location-key))))
+    (and (exists? ftp location-key)
+         (not (is-directory? ftp location-key))))
 
   Object
   (toString [this] (str "Ftplocation '" location-key "'")))
 
 (defn ->ftp-location
-  [channel location-key]
-  (FtpLocation. channel location-key))
+  [ftp location-key]
+  (FtpLocation. ftp location-key))
 
-(deftype FtpBucket [channel]
+(deftype FtpBucket [ftp]
   BucketLocation
   (put! [this obj]
     (throw (UnsupportedOperationException. "Can't put data directly to a bucket- specify a descendant")))
@@ -141,17 +146,41 @@
     false)
 
   (descendant-keys [this]
-    (get-descendant-keys channel nil))
+    (get-descendant-keys ftp nil))
 
   (child-keys [this]
-    (get-child-keys channel ""))
+    (get-child-keys ftp ""))
 
   (relative [this relative-key]
-    (->ftp-location channel relative-key))
+    (->ftp-location ftp relative-key))
 
   Object
   (toString [this] "FtpBucket"))
 
+(defn ->ssh-ftp [channel]
+  (fn [& args]
+    (apply ssh/sftp channel {} args)))
+
+(defn ->cli-ftp [{:keys [hostname username password session-options]
+                  :or {session-options {:strict-host-key-checking :no}}}]
+  (fn [& args]
+    (cli/with-default-session-options session-options
+      (apply cli/sftp
+             hostname
+             (concat
+               args
+               [:username username
+                :password password])))))
 (defn ->ftp-bucket
-  [channel]
-  (FtpBucket. channel))
+  "Either pass in com.jcraft.jsch.Channel, or a config map of:
+
+  {:hostname  \"localhost\"
+   :username  \"username\"
+   :password  \"password\"}
+
+   Optionally, you can specify clj-ssh :session-options.
+   By default, session-options is {:strict-host-key-checking :no}"
+  [config-or-channel]
+  (if (map? config-or-channel)
+    (FtpBucket. (->cli-ftp config-or-channel))
+    (FtpBucket. (->ssh-ftp config-or-channel))))

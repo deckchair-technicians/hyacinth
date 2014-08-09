@@ -37,10 +37,8 @@
     {}))
 
 
-(defn ->path [a b]
-  (if (and a b)
-    (.getPath (File. a b))
-    (or a b)))
+(defn join-paths [& paths]
+  (reduce #(.getPath (File. %1 %2)) paths))
 
 (defn parent [path]
   (.getParent (if (instance? File path)

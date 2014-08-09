@@ -26,12 +26,15 @@
                         "to run test. This file should be in .gitignore. Double check it really is before commiting."))))
 
 (when @props
-  (facts "ftp buckets work"
+  (facts "ftp buckets work with ftp using a defined Channel"
     (let [agent (ssh-agent {})]
-      (let [session (session agent (:host-ip @props) {:strict-host-key-checking :no
+      (let [session (session agent (:hostname @props) {:strict-host-key-checking :no
                                                       :username                 (:username @props)
                                                       :password                 (:password @props)})]
         (with-connection session
           (let [channel (ssh-sftp session)]
             (with-channel-connection channel
-              (check-contract (->ftp-bucket channel)))))))))
+              (check-contract (->ftp-bucket channel))))))))
+
+  (facts "ftp buckets work with cli ftp"
+         (check-contract (->ftp-bucket @props))))
