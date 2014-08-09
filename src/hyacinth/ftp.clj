@@ -34,7 +34,8 @@
   (try
     (.isDir (ftp :stat path))
     (catch Exception e
-      (throw e))))
+      (throw (ex-info (str "Problem checking is-directory? '" path "' " (.getMessage e)) (when (instance? SftpException e)
+                                                                                          {:id (.id e)}) e)))))
 
 (defn parts [path]
   (if (parent path)
@@ -91,8 +92,8 @@
       (if (is-directory? ftp location-key)
         (ftp :rmdir location-key)
         (ftp :rm location-key))
-      (catch SftpException e
-        (if (= ChannelSftp/SSH_FX_NO_SUCH_FILE (.id e))
+      (catch Exception e
+        (if (= ChannelSftp/SSH_FX_NO_SUCH_FILE (:id (ex-data e)))
           nil
           (throw e))))
     nil)
@@ -152,7 +153,9 @@
     (get-child-keys ftp root))
 
   (relative [this relative-key]
-    (->ftp-location ftp (join-paths root relative-key)))
+    (->ftp-location ftp (if root
+                          (join-paths root relative-key)
+                          relative-key)))
 
   Object
   (toString [this] "FtpBucket"))
@@ -183,7 +186,8 @@
 
    Optionally, you can specify clj-ssh :session-options.
 "
-  [config-or-channel root]
+  [config-or-channel & {:keys [root]
+                        :or {root nil}}]
   (if (map? config-or-channel)
     (FtpBucket. (->cli-ftp config-or-channel) root)
     (FtpBucket. (->ssh-ftp config-or-channel) root)))
