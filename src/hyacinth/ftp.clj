@@ -131,7 +131,7 @@
   [ftp location-key]
   (FtpLocation. ftp location-key))
 
-(deftype FtpBucket [ftp]
+(deftype FtpBucket [ftp root]
   BucketLocation
   (put! [this obj]
     (throw (UnsupportedOperationException. "Can't put data directly to a bucket- specify a descendant")))
@@ -149,10 +149,10 @@
     (get-descendant-keys ftp nil))
 
   (child-keys [this]
-    (get-child-keys ftp ""))
+    (get-child-keys ftp root))
 
   (relative [this relative-key]
-    (->ftp-location ftp relative-key))
+    (->ftp-location ftp (join-paths root relative-key)))
 
   Object
   (toString [this] "FtpBucket"))
@@ -179,8 +179,11 @@
    :password  \"password\"}
 
    Optionally, you can specify clj-ssh :session-options.
-   By default, session-options is {:strict-host-key-checking :no}"
-  [config-or-channel]
+   By default, session-options is {:strict-host-key-checking :no}
+
+   Optionally, you can specify clj-ssh :session-options.
+"
+  [config-or-channel root]
   (if (map? config-or-channel)
-    (FtpBucket. (->cli-ftp config-or-channel))
-    (FtpBucket. (->ssh-ftp config-or-channel))))
+    (FtpBucket. (->cli-ftp config-or-channel) root)
+    (FtpBucket. (->ssh-ftp config-or-channel) root)))
