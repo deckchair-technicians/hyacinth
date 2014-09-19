@@ -48,13 +48,16 @@
       (when-not (exists? ftp part)
         (ftp :mkdir part)))))
 
+(defn ls-entries->keys [ls-entries]
+  (->> ls-entries
+       (map #(.getFilename %))
+       (remove #(#{"." ".."} %))))
+
 (defn get-child-keys [ftp path]
   (if path
     (when (is-directory? ftp path)
-      (->> (ftp :ls path)
-           (map #(.getFilename %))
-           (remove #(#{"." ".."} %))))
-    (map #(.getFilename %) (ftp :ls))))
+      (ls-entries->keys (ftp :ls path)))
+    (ls-entries->keys (ftp :ls))))
 
 (defn get-descendant-keys [ftp root]
   (when (is-directory? ftp root)
