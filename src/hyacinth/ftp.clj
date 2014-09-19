@@ -167,8 +167,9 @@
   (fn [& args]
     (apply ssh/sftp channel {} args)))
 
-(defn ->cli-ftp [{:keys [hostname username password session-options]
-                  :or {session-options {:strict-host-key-checking :no}}}]
+(defn ->cli-ftp [{:keys [port hostname username password session-options]
+                  :or {session-options {:strict-host-key-checking :no}
+                       port 22}}]
   (fn [& args]
     (cli/with-default-session-options session-options
       (apply cli/sftp
@@ -176,7 +177,9 @@
              (concat
                args
                [:username username
-                :password password])))))
+                :password password
+                :port     port])))))
+
 (defn ->ftp-bucket
   "Either pass in com.jcraft.jsch.Channel, or a config map of:
 
