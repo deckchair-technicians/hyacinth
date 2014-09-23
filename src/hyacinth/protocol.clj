@@ -27,7 +27,7 @@
   (map #(relative location %) (child-keys location)))
 
 (defn copy-location [from to]
-  (put! to (InputStreamReader. (get-stream from))))
+  (put! to (get-stream from)))
 
 (defn recursive-delete! [location]
   (doseq [child (children location)]
