@@ -4,7 +4,6 @@
             [hyacinth
              [util :refer [with-temp-dir]]
              [contract :refer :all]
-             [protocol :refer :all]
              [file :refer :all]]))
 
 (facts "file buckets work"
