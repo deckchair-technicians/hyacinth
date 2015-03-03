@@ -1,13 +1,18 @@
 (ns hyacinth.protocol
-  (:import (java.io Reader InputStream File ByteArrayInputStream InputStreamReader)))
+  (:import (java.io Reader InputStream File ByteArrayInputStream)))
 
 (defmulti coerce-to-streamable class)
+
 (defmethod coerce-to-streamable String [s]
   (coerce-to-streamable (.getBytes s)))
+
 (defmethod coerce-to-streamable (Class/forName "[B") [b]
   (ByteArrayInputStream. b))
+
 (defmethod coerce-to-streamable File [f] f)
+
 (defmethod coerce-to-streamable InputStream [s] s)
+
 (defmethod coerce-to-streamable Reader [r] r)
 
 (defprotocol BucketLocation
@@ -17,7 +22,8 @@
   (has-data? [this])
   (child-keys [this])
   (descendant-keys [this])
-  (relative [this key]))
+  (relative [this key])
+  (location-key [this]))
 
 (defn descendant-locations [location]
   (map #(relative location %)

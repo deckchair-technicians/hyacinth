@@ -128,6 +128,9 @@
     (and (exists? ftp location-key)
          (not (is-directory? ftp location-key))))
 
+  (location-key [this]
+    location-key)
+
   Object
   (toString [this] (str "Ftplocation '" location-key "'")))
 
@@ -159,6 +162,8 @@
     (->ftp-location ftp (if root
                           (join-paths root relative-key)
                           relative-key)))
+  (location-key [this]
+    nil)
 
   Object
   (toString [this] "FtpBucket"))

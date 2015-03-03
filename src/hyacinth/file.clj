@@ -5,7 +5,9 @@
 
             [clojure.string :as s]
 
-            [hyacinth.protocol :refer :all])
+            [hyacinth
+             [protocol :refer :all]
+             [util :refer [join-paths]]])
   (:import [java.io File]
            [java.net URI]))
 
@@ -26,7 +28,7 @@
        (mapcat identity)))
 
 (declare ->file-location)
-(deftype FileLocation [file]
+(deftype FileLocation [file location-key]
   BucketLocation
   (put! [this obj]
     (fs/mkdirs (fs/parent file))
@@ -50,11 +52,14 @@
     (assert (string? relative-key) (str "class:" (class relative-key)
                                           " value: " relative-key))
 
-    (FileLocation. (fs/file file relative-key)))
+    (FileLocation. (fs/file file relative-key) (join-paths location-key relative-key)))
 
   (has-data? [this]
     (and (not (fs/directory? file))
          (fs/exists? file)))
+
+  (location-key [this]
+    location-key)
 
   Object
   (toString [this] (str "FileLocation '" (.getAbsolutePath file) "'")))
@@ -64,7 +69,7 @@
   (assert (fs/directory? data-dir) (str "Not a directory " (.getAbsolutePath data-dir)))
 
   (let [file (fs/file data-dir file-key)]
-    (FileLocation. file)))
+    (FileLocation. file file-key)))
 
 (deftype FileBucket [data-dir]
   BucketLocation
@@ -88,6 +93,9 @@
 
   (relative [this relative-key]
     (->file-location data-dir relative-key))
+
+  (location-key [this]
+    nil)
 
   Object
   (toString [this] (str "FileBucket '" (.getAbsolutePath data-dir) "'")))

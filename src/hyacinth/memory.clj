@@ -57,6 +57,9 @@
       (has-data? [this]
         (instance? (Class/forName "[B") (get-in @buckets-atom key-path)))
 
+      (location-key [this]
+        (clojure.string/join "/" (drop 1 key-path)))
+
       Object
       (toString [this] (str "MemoryBucket '" path "'")))))
 
@@ -86,6 +89,9 @@
     (relative [this relative-key]
       (assert relative-key)
       (memory-location buckets-atom (.getPath (File. bucket-name relative-key))))
+
+    (location-key [this]
+      nil)
 
     Object
     (toString [this] (str "MemoryBucket '" bucket-name "'"))))

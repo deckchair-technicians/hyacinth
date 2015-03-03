@@ -98,6 +98,9 @@
   (has-data? [this]
     (some #{location-key} (list-descendants bucket-name location-key)))
 
+  (location-key [this]
+    location-key)
+
   Object
   (toString [this] (str "S3Location '" bucket-name "/" location-key "'")))
 
@@ -126,6 +129,9 @@
 
   (child-keys [this]
     (list-descendants bucket-name "") )
+
+  (location-key [this]
+    nil)
 
   Object
   (toString [this] (str "S3Bucket '" bucket-name "'")))

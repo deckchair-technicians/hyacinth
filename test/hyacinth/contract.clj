@@ -23,6 +23,8 @@
             second-child (h/relative intermediate "1.1.2")
             second-data (uuid-str)]
 
+        (fact "key works as expected"
+              (h/location-key second-child) => (str root-directory "/1/1.1/1.1.2"))
 
         (fact "put! does not throw exceptions"
               (h/put! first-child first-data) => first-child
