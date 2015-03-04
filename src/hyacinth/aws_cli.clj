@@ -130,6 +130,9 @@
   (child-keys [this]
     (list-descendants bucket-name "") )
 
+  (descendant-keys [this]
+    (list-descendants bucket-name "") )
+
   (location-key [this]
     nil)
 
