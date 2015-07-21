@@ -4,8 +4,10 @@
             [hyacinth.contract :refer :all]
 
             [clojure.java.io :as io]
-            [hyacinth.protocol :refer :all]
-            [hyacinth.ftp :refer :all])
+            [hyacinth
+             [ftp :refer :all]
+             [protocol :refer :all]])
+
   (:import [java.util Properties Map$Entry]))
 
 (defn load-properties [url]
@@ -29,8 +31,8 @@
   (facts "ftp buckets work with ftp using a defined Channel"
     (let [agent (ssh-agent {})]
       (let [session (session agent (:hostname @props) {:strict-host-key-checking :no
-                                                      :username                 (:username @props)
-                                                      :password                 (:password @props)})]
+                                                       :username                 (:username @props)
+                                                       :password                 (:password @props)})]
         (with-connection session
           (let [channel (ssh-sftp session)]
             (with-channel-connection channel
