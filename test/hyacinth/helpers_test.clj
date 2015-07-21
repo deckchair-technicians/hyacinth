@@ -2,7 +2,7 @@
   (:import [java.io FileInputStream ByteArrayInputStream]
            [sun.misc IOUtils])
   (:require [midje.sweet :refer :all]
-            [hyacinth.memory :refer [->memory-bucket]]
+            [hyacinth.impl.memory :refer [->memory-bucket]]
             [hyacinth.protocol :refer :all]))
 
 (fact "copy-location works"

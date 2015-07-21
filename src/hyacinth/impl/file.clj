@@ -1,4 +1,4 @@
-(ns hyacinth.file
+(ns hyacinth.impl.file
   (:require [me.raynes.fs :as fs]
 
             [clojure.java.io :as io]

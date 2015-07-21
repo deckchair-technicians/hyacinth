@@ -1,4 +1,4 @@
-(ns hyacinth.aws-cli
+(ns hyacinth.impl.aws-cli
   (:require [clojure.java
              [shell :as shell]
              [io :as io]]
@@ -6,26 +6,41 @@
             [clojure.string :as s]
 
             [hyacinth
-             [util :refer [with-temp-dir to-file]]
+             [util :refer [with-temp-dir to-file strip-trailing-slash]]
              [protocol :refer :all]])
 
-   (:import (java.io File IOException)))
+  (:import (java.io File IOException)
+           [clojure.lang ExceptionInfo]))
 
-(defn join-path [path & paths]
-  (.getPath (reduce (fn [acc segment] (File. acc segment)) (File. path) paths)))
+(defn join-path [^String path & paths]
+  (.getPath (reduce (fn [^File acc ^String segment] (File. acc segment)) (File. path) paths)))
 
 (defn sh [& args]
   (let [result (apply shell/sh args)]
     (if (not= 0 (:exit result))
-      (throw (RuntimeException. (str result)))
+      (throw (ex-info (str result " while running: " (s/join " " args)) result))
       result)))
+
+(defn is-404-equivalent [e]
+  (let [d (ex-data e)]
+    (and (= 1 (:exit d))
+         (or (re-find #".*(NoSuchKey|NoSuchBucket|\(404\)).*" (:err d))
+             (s/blank? (:err d))))))
 
 (defmacro throw-no-such-key [url & body]
   `(try
      ~@body
-     (catch RuntimeException e#
-       (if (re-matches #".*NoSuchKey.*" (.getMessage e#))
+     (catch ExceptionInfo e#
+       (if (is-404-equivalent e#)
          (throw (IOException. (str "Could not get " ~url) e#))
+         (throw e#)))))
+
+(defmacro nil-on-no-such-key [& body]
+  `(try
+     ~@body
+     (catch ExceptionInfo e#
+       (if (is-404-equivalent e#)
+         nil
          (throw e#)))))
 
 (defn replace-prefix [prefix]
@@ -67,11 +82,11 @@
                                           (str "s3://" (join-path bucket-name location-key)))))
     this)
 
-  (get-stream [this]
+  (get-stream [_this]
     (with-temp-dir
       [dir "hyacinth"]
       (let [s3-url (str "s3://" (join-path bucket-name location-key))
-            file (File. dir "forstreaming")]
+            file (File. ^File dir "forstreaming")]
         (throw-no-such-key (str bucket-name "/" location-key)
                            (sh "aws" "s3" "cp"
                                s3-url
@@ -79,8 +94,8 @@
 
         (io/input-stream file))))
 
-  (relative [this relative-key]
-    (->s3-location bucket-name (.getPath (File. location-key relative-key))))
+  (relative [_this relative-key]
+    (->s3-location bucket-name (.getPath (File. ^String location-key ^String  relative-key))))
 
   (delete! [this]
     (when (has-data? this)
@@ -88,26 +103,26 @@
         (assert (= 0 (:exit (sh "aws" "s3" "rm" s3-url)))))))
 
   (child-keys [this]
-    (->> (list-descendants-relative bucket-name (str location-key "/"))
+    (->> (descendant-keys this)
          (map trim-after-first-slash)
          (into #{})))
 
-  (descendant-keys [this]
-    (list-descendants-relative bucket-name location-key))
+  (descendant-keys [_this]
+    (nil-on-no-such-key (list-descendants-relative bucket-name location-key)))
 
-  (has-data? [this]
-    (some #{location-key} (list-descendants bucket-name location-key)))
+  (has-data? [_this]
+    (some #{location-key} (nil-on-no-such-key (list-descendants bucket-name location-key))))
 
-  (location-key [this]
+  (location-key [_this]
     location-key)
 
   Object
-  (toString [this] (str "S3Location '" bucket-name "/" location-key "'")))
+  (toString [_this] (str "S3Location '" bucket-name "/" location-key "'")))
 
 (defn ->s3-location
   [bucket-name location-key]
 
-  (S3Location. bucket-name location-key))
+  (S3Location. bucket-name (strip-trailing-slash location-key)))
 
 (deftype S3Bucket [bucket-name]
     BucketLocation
@@ -115,29 +130,29 @@
     (->s3-location bucket-name relative-key))
 
   ; Delegate to Amazonica S3 implementation
-  (put! [this obj]
+  (put! [_this _obj]
     (throw (UnsupportedOperationException. "Can't put data directly to a bucket- specify a descendant")))
 
-  (delete! [this]
+  (delete! [_this]
     (throw (UnsupportedOperationException. "Can't delete buckets")))
 
-  (get-stream [this]
+  (get-stream [_this]
     (throw (UnsupportedOperationException. "Can't get data directly from a bucket- specify a descendant")))
 
-  (has-data? [this]
+  (has-data? [_this]
     false)
 
-  (child-keys [this]
+  (child-keys [_this]
     (list-descendants bucket-name "") )
 
-  (descendant-keys [this]
+  (descendant-keys [_this]
     (list-descendants bucket-name "") )
 
-  (location-key [this]
+  (location-key [_this]
     nil)
 
   Object
-  (toString [this] (str "S3Bucket '" bucket-name "'")))
+  (toString [_this] (str "S3Bucket '" bucket-name "'")))
 
 (defn ->s3-bucket
   [bucket-name]

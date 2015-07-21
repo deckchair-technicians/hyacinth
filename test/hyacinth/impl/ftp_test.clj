@@ -1,12 +1,12 @@
-(ns hyacinth.ftp-test
+(ns hyacinth.impl.ftp-test
   (:require [midje.sweet :refer :all]
             [clj-ssh.ssh :refer :all]
-            [hyacinth.contract :refer :all]
-
             [clojure.java.io :as io]
+
             [hyacinth
-             [ftp :refer :all]
-             [protocol :refer :all]])
+             [contract :refer :all]
+             [protocol :refer :all]]
+            [hyacinth.impl.ftp :refer :all])
 
   (:import [java.util Properties Map$Entry]))
 

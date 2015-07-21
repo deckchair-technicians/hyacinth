@@ -1,7 +1,8 @@
 (ns hyacinth.util
   (:require [clojure.java.io :as io]
             [me.raynes.fs :as fs]
-            [hyacinth.protocol :refer [coerce-to-streamable]])
+            [hyacinth.protocol :refer [coerce-to-streamable]]
+            [clojure.string :as s])
   (:import [java.io File]))
 
 (defn to-file [dir obj]
@@ -47,3 +48,6 @@
 
 (defn filename [path]
   (.getName (File. path)))
+
+(defn strip-trailing-slash [s]
+  (s/replace s #"/$" ""))

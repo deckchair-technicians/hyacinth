@@ -1,4 +1,4 @@
-(ns hyacinth.memory
+(ns hyacinth.impl.memory
   (:import (java.io File ByteArrayOutputStream ByteArrayInputStream IOException))
   (:require [clojure.java.io :as io]
             [clojure.string :as s]

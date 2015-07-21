@@ -1,11 +1,11 @@
-(ns hyacinth.aws-cli-test
+(ns hyacinth.impl.aws-cli-test
   (:import (java.util Properties Map$Entry))
   (:require [midje.sweet :refer :all]
             [hyacinth.contract :refer :all]
 
             [clojure.java.io :as io]
             [hyacinth.protocol :refer :all]
-            [hyacinth.aws-cli :refer :all]))
+            [hyacinth.impl.aws-cli :refer :all]))
 
 (defn load-properties [url]
   (doto (Properties.)

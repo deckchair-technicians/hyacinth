@@ -59,6 +59,10 @@
           (h/descendant-keys first-child)
           => empty?)
 
+        (fact "descendant-keys returns nothing for non-existent nodes"
+          (h/descendant-keys (h/relative parent (uuid-str)))
+          => empty?)
+
         (fact "child-keys works"
           (h/child-keys intermediate)
           => (contains ["1.1.1" "1.1.2"] :in-any-order))

@@ -1,4 +1,4 @@
-(ns hyacinth.ftp
+(ns hyacinth.impl.ftp
   (:require [clj-ssh.ssh :as ssh]
             [clj-ssh.cli :as cli]
 
