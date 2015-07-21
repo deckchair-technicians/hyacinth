@@ -10,6 +10,8 @@
 
   (:import [java.util Properties Map$Entry]))
 
+(println "Entering FTP test")
+
 (defn load-properties [url]
   (doto (Properties.)
     (.load (io/input-stream url))))
@@ -26,6 +28,8 @@
                (println "FTP test not running- create"
                         (str "test/" props-path)
                         "to run test. This file should be in .gitignore. Double check it really is before commiting."))))
+
+(println "FTP props: " @props)
 
 (when @props
   (facts "ftp buckets work with ftp using a defined Channel"
