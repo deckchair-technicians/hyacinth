@@ -78,10 +78,3 @@ Supports a useful subset of the full S3 functionality
       (finally
         (recursive-delete! root))))
 ```
-
-## License
-
-Copyright © 2014 FIXME
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
