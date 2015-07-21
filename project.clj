@@ -1,4 +1,4 @@
-(defproject com.callisto/hyacinth "DEV"
+(defproject technology.theorem/hyacinth "DEV"
 
   :description "Bucket abstraction over S3, FTP, file, memory map"
 
