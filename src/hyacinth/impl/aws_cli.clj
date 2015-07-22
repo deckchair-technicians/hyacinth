@@ -13,8 +13,12 @@
            [clojure.lang ExceptionInfo]
            [java.net URI]))
 
-(defn join-path [^String path & paths]
-  (.getPath (reduce (fn [^File acc ^String segment] (File. acc segment)) (File. path) paths)))
+(defn join-path-forward-slash [^String path & paths]
+  (reduce
+   (fn [path-left path-right]
+     (clojure.string/replace (str path-left "/" path-right) #"/+" "/"))
+   path
+   paths))
 
 (defn sh [& args]
   (let [result (apply shell/sh args)]
@@ -80,13 +84,13 @@
                    (throw-no-such-key (str bucket-name "/" location-key)
                                       (sh "aws" "s3" "cp"
                                           (to-file dir obj)
-                                          (str "s3://" (join-path bucket-name location-key)))))
+                                          (str "s3://" (join-path-forward-slash bucket-name location-key)))))
     this)
 
   (get-stream [_this]
     (with-temp-dir
       [dir "hyacinth"]
-      (let [s3-url (str "s3://" (join-path bucket-name location-key))
+      (let [s3-url (str "s3://" (join-path-forward-slash bucket-name location-key))
             file (File. ^File dir "forstreaming")]
         (throw-no-such-key (str bucket-name "/" location-key)
                            (sh "aws" "s3" "cp"
@@ -96,11 +100,11 @@
         (io/input-stream file))))
 
   (relative [_this relative-key]
-    (->s3-location bucket-name (.getPath (File. ^String location-key ^String  relative-key))))
+    (->s3-location bucket-name (join-path-forward-slash location-key relative-key)))
 
   (delete! [this]
     (when (has-data? this)
-      (let [s3-url (str "s3://" (join-path bucket-name location-key))]
+      (let [s3-url (str "s3://" (join-path-forward-slash bucket-name location-key))]
         (assert (= 0 (:exit (sh "aws" "s3" "rm" s3-url)))))))
 
   (child-keys [this]
