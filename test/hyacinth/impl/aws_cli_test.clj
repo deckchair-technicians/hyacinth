@@ -3,7 +3,7 @@
             [hyacinth.contract :refer :all]
 
             [clojure.java.io :as io]
-            [hyacinth.core :refer [location-factory]]
+            [hyacinth.core :refer [->uri->location]]
             [hyacinth.impl.aws-cli :refer :all])
   (:import [java.util Properties]))
 
@@ -26,4 +26,4 @@
 
 (when @props
   (facts "aws cli buckets work"
-    (check-contract (->s3-bucket (:bucket @props)) (location-factory))))
+    (check-contract (->s3-bucket (:bucket @props)) (->uri->location))))

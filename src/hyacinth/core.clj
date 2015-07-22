@@ -32,7 +32,7 @@
   (let [bucket (->file-bucket file-bucket-root (.getHost uri))]
     (h/relative bucket (.getPath uri))))
 
-(defn location-factory [& {:keys [memory-bucket-atom
+(defn ->uri->location [& {:keys [memory-bucket-atom
                                   file-bucket-root]
                            :or   {memory-bucket-atom (atom {})}}]
   (fn [^URI uri]
