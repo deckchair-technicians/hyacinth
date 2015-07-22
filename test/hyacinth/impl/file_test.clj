@@ -3,9 +3,11 @@
 
             [hyacinth
              [util :refer [with-temp-dir]]
-             [contract :refer :all]]
+             [contract :refer :all]
+             [core :refer [location-factory]]]
             [hyacinth.impl.file :refer :all]))
 
 (facts "file buckets work"
   (with-temp-dir [data-dir "hyacinth-file-test"]
-                 (check-contract (->file-bucket data-dir))))
+    (println "Running file tests in " (.getAbsolutePath data-dir))
+    (check-contract (->file-bucket data-dir "test-bucket") (location-factory :file-bucket-root data-dir))))

@@ -7,9 +7,14 @@
 
             [hyacinth
              [protocol :refer :all]
-             [util :refer [join-paths]]])
+             [util :refer [join-paths strip-slashes]]])
   (:import [java.io File]
-           [java.net URI]))
+           [java.net URI]
+           [java.nio.file Path Paths]))
+
+(defn path [fragment1 & fragments]
+  (Paths/get fragment1 (into-array String fragments)))
+
 
 (defn get-child-keys [dir]
   (or (fs/list-dir dir) []))
@@ -28,7 +33,7 @@
        (mapcat identity)))
 
 (declare ->file-location)
-(deftype FileLocation [file location-key]
+(deftype FileLocation [bucket-dir file location-key]
   BucketLocation
   (put! [this obj]
     (fs/mkdirs (fs/parent file))
@@ -50,9 +55,9 @@
 
   (relative [this relative-key]
     (assert (string? relative-key) (str "class:" (class relative-key)
-                                          " value: " relative-key))
+                                        " value: " relative-key))
 
-    (FileLocation. (fs/file file relative-key) (join-paths location-key relative-key)))
+    (->file-location bucket-dir (join-paths location-key relative-key)))
 
   (has-data? [this]
     (and (not (fs/directory? file))
@@ -61,17 +66,25 @@
   (location-key [this]
     location-key)
 
+  (uri [this]
+    (URI. (str "file://" (.getName bucket-dir) "/" location-key)))
+
   Object
   (toString [this] (str "FileLocation '" (.getAbsolutePath file) "'")))
 
 (defn ->file-location
-  [data-dir file-key]
-  (assert (fs/directory? data-dir) (str "Not a directory " (.getAbsolutePath data-dir)))
+  [bucket-dir file-key]
+  (let [file-key (strip-slashes file-key)
+        bucket-path (.toPath bucket-dir)]
 
-  (let [file (fs/file data-dir file-key)]
-    (FileLocation. file file-key)))
+    (assert (fs/directory? bucket-dir) (str "Not a directory " (.getAbsolutePath bucket-dir)))
+    (assert (.startsWith (.normalize (.resolve ^Path (.toPath bucket-dir) (path file-key))) bucket-path)
+            (str "File key '" file-key "' is not accessible. If you have specified a path including ../ then you have gone above the bucket"))
 
-(deftype FileBucket [data-dir]
+    (let [file (fs/file bucket-dir file-key)]
+      (FileLocation. bucket-dir file file-key))))
+
+(deftype FileBucket [bucket-dir]
   BucketLocation
   (put! [this obj]
     (throw (UnsupportedOperationException. "Can't put data directly to a bucket- specify a descendant")))
@@ -86,22 +99,32 @@
     false)
 
   (descendant-keys [this]
-    (get-descendant-keys data-dir))
+    (get-descendant-keys bucket-dir))
 
   (child-keys [this]
-    (get-child-keys data-dir))
+    (get-child-keys bucket-dir))
 
   (relative [this relative-key]
-    (->file-location data-dir relative-key))
+    (->file-location bucket-dir relative-key))
 
   (location-key [this]
     nil)
 
+  (uri [this]
+    (URI. (str "file://" (.getName bucket-dir))))
+
   Object
-  (toString [this] (str "FileBucket '" (.getAbsolutePath data-dir) "'")))
+  (toString [this] (str "FileBucket '" (.getAbsolutePath bucket-dir) "'")))
 
 (defn ->file-bucket
-  [data-dir]
-  (let [data-dir (fs/file data-dir)]
+  [data-dir ^String bucket-name]
+  (let [data-dir   (fs/file data-dir)
+        bucket-dir (File. data-dir bucket-name)]
+
     (assert (fs/directory? data-dir) (str "Not a directory " (.getAbsolutePath data-dir)))
-    (FileBucket. data-dir)))
+    (assert (= (.getFileName (path bucket-name))
+               (path bucket-name))
+            (str "Bucket name must be a valid file name '" bucket-name "'"))
+
+    (FileBucket. (doto bucket-dir
+                   (.mkdir)))))

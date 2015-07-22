@@ -1,11 +1,11 @@
 (ns hyacinth.impl.aws-cli-test
-  (:import (java.util Properties Map$Entry))
   (:require [midje.sweet :refer :all]
             [hyacinth.contract :refer :all]
 
             [clojure.java.io :as io]
-            [hyacinth.protocol :refer :all]
-            [hyacinth.impl.aws-cli :refer :all]))
+            [hyacinth.core :refer [location-factory]]
+            [hyacinth.impl.aws-cli :refer :all])
+  (:import [java.util Properties]))
 
 (defn load-properties [url]
   (doto (Properties.)
@@ -26,4 +26,4 @@
 
 (when @props
   (facts "aws cli buckets work"
-    (check-contract (->s3-bucket (:bucket @props)))))
+    (check-contract (->s3-bucket (:bucket @props)) (location-factory))))

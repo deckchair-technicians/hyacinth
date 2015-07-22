@@ -23,7 +23,8 @@
   (child-keys [this])
   (descendant-keys [this])
   (relative [this key])
-  (location-key [this]))
+  (location-key [this])
+  (uri [this]))
 
 (defn descendant-locations [location]
   (map #(relative location %)

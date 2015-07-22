@@ -1,11 +1,12 @@
 (ns hyacinth.impl.memory
-  (:import (java.io File ByteArrayOutputStream ByteArrayInputStream IOException))
   (:require [clojure.java.io :as io]
             [clojure.string :as s]
 
             [hyacinth
              [util :refer [dissoc-in*]]
-             [protocol :refer :all]]))
+             [protocol :refer :all]])
+  (:import (java.io File ByteArrayOutputStream ByteArrayInputStream IOException)
+           [java.net URI]))
 
 (defn split-path [path]
   (s/split path #"/"))
@@ -27,7 +28,7 @@
          (mapcat identity))))
 
 (defn memory-location
-  [buckets-atom path]
+  [buckets-atom ^String path]
   (let [key-path (split-path path)]
     (reify BucketLocation
       (put! [this obj]
@@ -52,13 +53,16 @@
         (get-descendant-keys (get-in @buckets-atom key-path)))
 
       (relative [this relative-key]
-        (memory-location buckets-atom (.getPath (File. path relative-key))))
+        (memory-location buckets-atom (.getPath (File. path ^String relative-key))))
 
       (has-data? [this]
         (instance? (Class/forName "[B") (get-in @buckets-atom key-path)))
 
       (location-key [this]
         (clojure.string/join "/" (drop 1 key-path)))
+
+      (uri [this]
+        (URI. (str "mem://" path)))
 
       Object
       (toString [this] (str "MemoryBucket '" path "'")))))
@@ -92,6 +96,9 @@
 
     (location-key [this]
       nil)
+
+    (uri [this]
+      (URI. (str "mem://" bucket-name)))
 
     Object
     (toString [this] (str "MemoryBucket '" bucket-name "'"))))

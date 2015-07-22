@@ -2,8 +2,11 @@
   (:require [midje.sweet :refer :all]
             [hyacinth
              [contract :refer :all]
-             [protocol :refer :all]]
+             [core :refer [location-factory]]]
             [hyacinth.impl.memory :refer :all]))
 
 (facts "memory buckets work"
-       (check-contract (->memory-bucket (atom {}) "root-bucket")))
+  (let [memory-bucket-atom (atom {})
+        uri->location      (location-factory :memory-bucket-atom memory-bucket-atom)]
+    (check-contract (->memory-bucket memory-bucket-atom "root-bucket")
+                    uri->location)))

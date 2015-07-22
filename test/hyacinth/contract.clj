@@ -9,7 +9,7 @@
 
 (defn uuid-str [] (.toString (UUID/randomUUID)))
 
-(defn check-contract [bucket]
+(defn check-contract [bucket uri->location]
   (let [root-directory  (uuid-str)
         root (h/relative bucket root-directory)]
     (try
@@ -32,6 +32,10 @@
 
         (fact "reading data works"
           (slurp (h/get-stream first-child))
+          => first-data)
+
+        (fact "location->uri->location works"
+          (slurp (h/get-stream (uri->location (h/uri first-child))))
           => first-data)
 
         (fact "directory throws IOException if we ask for a stream"

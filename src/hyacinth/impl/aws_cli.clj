@@ -6,11 +6,12 @@
             [clojure.string :as s]
 
             [hyacinth
-             [util :refer [with-temp-dir to-file strip-trailing-slash]]
+             [util :refer [with-temp-dir to-file strip-slashes]]
              [protocol :refer :all]])
 
   (:import (java.io File IOException)
-           [clojure.lang ExceptionInfo]))
+           [clojure.lang ExceptionInfo]
+           [java.net URI]))
 
 (defn join-path [^String path & paths]
   (.getPath (reduce (fn [^File acc ^String segment] (File. acc segment)) (File. path) paths)))
@@ -116,13 +117,15 @@
   (location-key [_this]
     location-key)
 
+  (uri [_this]
+    (URI. (str "s3://" bucket-name "/" location-key)))
+
   Object
-  (toString [_this] (str "S3Location '" bucket-name "/" location-key "'")))
+  (toString [this] (uri this)))
 
 (defn ->s3-location
   [bucket-name location-key]
-
-  (S3Location. bucket-name (strip-trailing-slash location-key)))
+  (S3Location. bucket-name (strip-slashes location-key)))
 
 (deftype S3Bucket [bucket-name]
     BucketLocation
@@ -151,8 +154,11 @@
   (location-key [_this]
     nil)
 
+  (uri [_this]
+    (URI. (str "s3://" bucket-name)))
+
   Object
-  (toString [_this] (str "S3Bucket '" bucket-name "'")))
+  (toString [this] (uri this)))
 
 (defn ->s3-bucket
   [bucket-name]

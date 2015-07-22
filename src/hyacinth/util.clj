@@ -49,5 +49,5 @@
 (defn filename [path]
   (.getName (File. path)))
 
-(defn strip-trailing-slash [s]
-  (s/replace s #"/$" ""))
+(defn strip-slashes [s]
+  (s/replace s #"^/|/$" ""))
