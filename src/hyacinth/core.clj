@@ -42,10 +42,11 @@
                                   file-bucket-root]
                            :or   {memory-bucket-atom (atom {})}}]
   (fn [uri]
-    (let [^URI uri (->uri uri)]
-      (case (s/lower-case (.getScheme uri))
-        "mem" (uri->memory-location memory-bucket-atom uri)
-        "s3" (uri->s3-location uri)
-        "file" (uri->file-location file-bucket-root uri)
+    (when uri
+      (let [^URI uri (->uri uri)]
+        (case (s/lower-case (.getScheme uri))
+          "mem" (uri->memory-location memory-bucket-atom uri)
+          "s3" (uri->s3-location uri)
+          "file" (uri->file-location file-bucket-root uri)
 
-        (throw (UnsupportedOperationException. (str "I don't understand protocol '" (.getScheme uri) "' in uri " uri)))))))
+          (throw (UnsupportedOperationException. (str "I don't understand protocol '" (.getScheme uri) "' in uri " uri))))))))
