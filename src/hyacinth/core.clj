@@ -29,7 +29,7 @@
   (if (s/blank? (.getPath uri))
     (throw (IllegalAccessException. (str "You must specify a path in file uri " uri))))
 
-  (let [bucket (->file-bucket file-bucket-root (.getHost uri))]
+  (let [bucket (->file-bucket file-bucket-root (.getAuthority uri))]
     (h/relative bucket (.getPath uri))))
 
 (defmulti ->uri class)
