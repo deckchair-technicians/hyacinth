@@ -4,6 +4,7 @@
              [io :as io]]
 
             [clojure.string :as s]
+            [cheshire.core :as json]
 
             [hyacinth
              [util :refer [with-temp-dir to-file strip-slashes]]
@@ -54,9 +55,15 @@
       (assert (re-matches pattern s) (str pattern " does not match '" s "'"))
       (s/replace s pattern (fn [[_ x & _]] x)))))
 
+(defn aws-sh [command region & args]
+  (apply sh "aws" "s3" command (concat (if region ["--region" region] []) args)))
+
+(defn aws-cp [region from to]
+  (aws-sh "cp" region from to))
+
 (defn list-descendants
-  [bucket-name prefix]
-  (let [{:keys [out]} (sh "aws" "s3" "ls" (str "s3://" bucket-name "/" prefix) "--recursive")]
+  [region bucket-name prefix]
+  (let [{:keys [out]} (aws-sh "ls" region (str "s3://" bucket-name "/" prefix) "--recursive")]
     (->> (clojure.string/split-lines out)
          (map
           (fn [s]
@@ -67,8 +74,8 @@
          (filter identity))))
 
 (defn list-descendants-relative
-  [bucket-name prefix]
-  (->> (list-descendants bucket-name prefix)
+  [region bucket-name prefix]
+  (->> (list-descendants region bucket-name prefix)
        (map (replace-prefix prefix))
        (remove empty?)))
 
@@ -77,14 +84,14 @@
 
 
 (declare ->s3-location)
-(deftype S3Location [bucket-name location-key]
+
+(deftype S3Location [region bucket-name location-key]
          BucketLocation
   (put! [this obj]
     (with-temp-dir [dir "hyacinth"]
                    (throw-no-such-key (str bucket-name "/" location-key)
-                                      (sh "aws" "s3" "cp"
-                                          (to-file dir obj)
-                                          (str "s3://" (join-path-forward-slash bucket-name location-key)))))
+                                      (aws-cp region (to-file dir obj)
+                                              (str "s3://" (join-path-forward-slash bucket-name location-key)))))
     this)
 
   (get-stream [_this]
@@ -93,19 +100,17 @@
       (let [s3-url (str "s3://" (join-path-forward-slash bucket-name location-key))
             file (File. ^File dir "forstreaming")]
         (throw-no-such-key (str bucket-name "/" location-key)
-                           (sh "aws" "s3" "cp"
-                               s3-url
-                               (.getAbsolutePath file)))
+                           (aws-cp region s3-url (.getAbsolutePath file)))
 
         (io/input-stream file))))
 
   (relative [_this relative-key]
-    (->s3-location bucket-name (join-path-forward-slash location-key relative-key)))
+    (->s3-location region bucket-name (join-path-forward-slash location-key relative-key)))
 
   (delete! [this]
     (when (has-data? this)
       (let [s3-url (str "s3://" (join-path-forward-slash bucket-name location-key))]
-        (assert (= 0 (:exit (sh "aws" "s3" "rm" s3-url)))))))
+        (assert (= 0 (:exit (aws-sh "rm" region s3-url)))))))
 
   (child-keys [this]
     (->> (descendant-keys this)
@@ -113,10 +118,10 @@
          (into #{})))
 
   (descendant-keys [_this]
-    (nil-on-no-such-key (list-descendants-relative bucket-name location-key)))
+    (nil-on-no-such-key (list-descendants-relative region bucket-name location-key)))
 
   (has-data? [_this]
-    (some #{location-key} (nil-on-no-such-key (list-descendants bucket-name location-key))))
+    (some #{location-key} (nil-on-no-such-key (list-descendants region bucket-name location-key))))
 
   (location-key [_this]
     location-key)
@@ -125,16 +130,16 @@
     (URI. (str "s3://" bucket-name "/" location-key)))
 
   Object
-  (toString [this] (uri this)))
+  (toString [this] (str (uri this))))
 
 (defn ->s3-location
-  [bucket-name location-key]
-  (S3Location. bucket-name (strip-slashes location-key)))
+  [region bucket-name location-key]
+  (S3Location. region bucket-name (strip-slashes location-key)))
 
-(deftype S3Bucket [bucket-name]
+(deftype S3Bucket [bucket-name region]
     BucketLocation
   (relative [this relative-key]
-    (->s3-location bucket-name relative-key))
+    (->s3-location region bucket-name relative-key))
 
   ; Delegate to Amazonica S3 implementation
   (put! [_this _obj]
@@ -150,10 +155,10 @@
     false)
 
   (child-keys [_this]
-    (list-descendants bucket-name "") )
+    (list-descendants region bucket-name "") )
 
   (descendant-keys [_this]
-    (list-descendants bucket-name "") )
+    (list-descendants region bucket-name "") )
 
   (location-key [_this]
     nil)
@@ -162,8 +167,12 @@
     (URI. (str "s3://" bucket-name)))
 
   Object
-  (toString [this] (uri this)))
+  (toString [this] (str (uri this))))
 
 (defn ->s3-bucket
   [bucket-name]
-  (S3Bucket. bucket-name))
+  (let [region (-> (sh "aws" "s3api" "get-bucket-location" "--bucket" "theorem-vgr-data")
+                   :out
+                   (json/parse-string keyword)
+                   :LocationConstraint)]
+    (S3Bucket. bucket-name region)))
