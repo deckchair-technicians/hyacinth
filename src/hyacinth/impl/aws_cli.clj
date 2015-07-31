@@ -171,7 +171,7 @@
 
 (defn ->s3-bucket
   [bucket-name]
-  (let [region (-> (sh "aws" "s3api" "get-bucket-location" "--bucket" "theorem-vgr-data")
+  (let [region (-> (sh "aws" "s3api" "get-bucket-location" "--bucket" bucket-name)
                    :out
                    (json/parse-string keyword)
                    :LocationConstraint)]
