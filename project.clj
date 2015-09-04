@@ -7,12 +7,8 @@
   :plugins [[s3-wagon-private "1.1.2"]
             [lein-set-version "0.3.0" ]]
 
-  :deploy-repositories [["releases" {:url "s3p://repo.solo.com/releases" :creds :gpg}]
-                        ["snapshots" {:url "s3p://repo.solo.com/snapshots" :creds :gpg}]]
-
-  :repositories [["solo" ~(if (System/getenv "AWS_ACCESS_KEY_ID")
-                            {:url "s3p://repo.solo.com/releases" :username :env :passphrase :env}
-                            {:url "s3p://repo.solo.com/releases" :creds :gpg})]]
+  :deploy-repositories [["releases" {:url "s3p://repo.theorem.technology/releases" :creds :gpg}]
+                        ["snapshots" {:url "s3p://repo.theorem.technology/snapshots" :creds :gpg}]]
 
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [clj-time "0.6.0"]
