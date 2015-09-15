@@ -2,13 +2,8 @@
 
   :description "Bucket abstraction over S3, FTP, file, memory map"
 
-  :url "https://bitbucket.org/TheoremTechnology/hyacinth"
-
   :plugins [[s3-wagon-private "1.1.2"]
             [lein-set-version "0.3.0" ]]
-
-  :deploy-repositories [["releases" {:url "s3p://repo.theorem.technology/releases" :creds :gpg}]
-                        ["snapshots" {:url "s3p://repo.theorem.technology/snapshots" :creds :gpg}]]
 
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [clj-time "0.6.0"]
