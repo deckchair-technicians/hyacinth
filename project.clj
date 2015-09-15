@@ -1,9 +1,8 @@
 (defproject technology.theorem/hyacinth "DEV"
 
-
-  :repositories [["theorem-repo" ~(if (System/getenv "AWS_ACCESS_KEY_ID")
-                                    {:url "s3p://theorem-repo/repo" :username :env :passphrase :env}
-                                    {:url "s3p://theorem-repo/repo" :creds :gpg})]]
+  :repositories [["theorem-repo" {:url "s3://theorem-repo/repo"
+                                  :username [:gpg :env/aws_access_key_id]
+                                  :passphrase [:gpg :env/aws_secret_access_key]}]]
 
   :description "Bucket abstraction over S3, FTP, file, memory map"
 
