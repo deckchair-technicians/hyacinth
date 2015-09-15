@@ -7,7 +7,7 @@
 
   :description "Bucket abstraction over S3, FTP, file, memory map"
 
-  :plugins [[lein-maven-s3-wagon "0.2.4"]
+  :plugins [[savagematt/lein-maven-s3-wagon "0.2.5"]
             [lein-set-version "0.3.0" ]]
 
   :dependencies [[org.clojure/clojure "1.6.0"]
