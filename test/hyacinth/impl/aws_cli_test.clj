@@ -33,4 +33,7 @@
 
 (when @props
   (facts "aws cli buckets work"
-    (check-contract (->s3-bucket (:bucket @props)) (->uri->location))))
+    (check-contract (->s3-bucket @props)
+                    (->uri->location :bucket-name->s3-location
+                                     (fn [bucket-name]
+                                       (->s3-bucket (assoc @props :bucket-name bucket-name)))))))

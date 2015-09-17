@@ -16,10 +16,10 @@
 
 (defn join-path-forward-slash [^String path & paths]
   (reduce
-   (fn [path-left path-right]
-     (clojure.string/replace (str path-left "/" path-right) #"/+" "/"))
-   path
-   paths))
+    (fn [path-left path-right]
+      (clojure.string/replace (str path-left "/" path-right) #"/+" "/"))
+    path
+    paths))
 
 (defn sh [& args]
   (let [result (apply shell/sh args)]
@@ -61,21 +61,28 @@
 (defn aws-cp [region from to]
   (aws-sh "cp" region from to))
 
+(defprotocol AwsCli
+  (ls [this location-key])
+  (ls-recursive [this location-key])
+  (cp-up [this from-input-stream to-location-key])
+  (cp-down [this from-location-key to-file])
+  (rm [this location-key]))
+
 (defn list-descendants
-  [region bucket-name prefix]
-  (let [{:keys [out]} (aws-sh "ls" region (str "s3://" bucket-name "/" prefix) "--recursive")]
+  [aws-cli prefix]
+  (let [{:keys [out]} (ls-recursive aws-cli prefix)]
     (->> (clojure.string/split-lines out)
          (map
-          (fn [s]
-            (last
-             (re-find
-              #"[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} *[0-9]* (.*)$"
-              s))))
+           (fn [s]
+             (last
+               (re-find
+                 #"[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} *[0-9]* (.*)$"
+                 s))))
          (filter identity))))
 
 (defn list-descendants-relative
-  [region bucket-name prefix]
-  (->> (list-descendants region bucket-name prefix)
+  [aws-cli prefix]
+  (->> (list-descendants aws-cli prefix)
        (map (replace-prefix prefix))
        (remove empty?)))
 
@@ -83,34 +90,54 @@
   (s/replace s #"/.*" ""))
 
 
+(deftype BucketAwsCli [bucket-name region profile]
+  AwsCli
+  (ls [_ location-key]
+    (aws-sh "ls" region (str "s3://" bucket-name "/" location-key)))
+
+  (ls-recursive [this location-key]
+    (aws-sh "ls" region (str "s3://" bucket-name "/" location-key) "--recursive"))
+
+  (cp-up [_ from-input-stream to-location-key]
+    (throw-no-such-key (str bucket-name "/" to-location-key)
+                       (aws-cp region
+                               from-input-stream
+                               (str "s3://" (join-path-forward-slash bucket-name to-location-key)))))
+
+  (cp-down [_ from-location-key to-file]
+    (let [s3-url (str "s3://" (join-path-forward-slash bucket-name from-location-key))]
+      (throw-no-such-key (str bucket-name "/" from-location-key)
+                         (aws-cp region s3-url (.getAbsolutePath to-file)))
+
+      (io/input-stream to-file)))
+
+  (rm [_ location-key]
+    (let [s3-url (str "s3://" (join-path-forward-slash bucket-name location-key))]
+      ; TODO: This assert is gross.
+      (assert (= 0 (:exit (aws-sh "rm" region s3-url)))))))
+
 (declare ->s3-location)
 
-(deftype S3Location [region bucket-name location-key]
-         BucketLocation
+(deftype S3Location [aws-cli bucket-name location-key]
+  BucketLocation
   (put! [this obj]
     (with-temp-dir [dir "hyacinth"]
-                   (throw-no-such-key (str bucket-name "/" location-key)
-                                      (aws-cp region (to-file dir obj)
-                                              (str "s3://" (join-path-forward-slash bucket-name location-key)))))
+      (cp-up aws-cli
+          (to-file dir obj)
+          location-key))
     this)
 
   (get-stream [_this]
     (with-temp-dir
       [dir "hyacinth"]
-      (let [s3-url (str "s3://" (join-path-forward-slash bucket-name location-key))
-            file (File. ^File dir "forstreaming")]
-        (throw-no-such-key (str bucket-name "/" location-key)
-                           (aws-cp region s3-url (.getAbsolutePath file)))
-
-        (io/input-stream file))))
+      (cp-down aws-cli location-key (File. ^File dir "forstreaming"))))
 
   (relative [_this relative-key]
-    (->s3-location region bucket-name (join-path-forward-slash location-key relative-key)))
+    (->s3-location aws-cli bucket-name (join-path-forward-slash location-key relative-key)))
 
   (delete! [this]
     (when (has-data? this)
-      (let [s3-url (str "s3://" (join-path-forward-slash bucket-name location-key))]
-        (assert (= 0 (:exit (aws-sh "rm" region s3-url)))))))
+      (rm aws-cli location-key)))
 
   (child-keys [this]
     (->> (descendant-keys this)
@@ -118,10 +145,10 @@
          (into #{})))
 
   (descendant-keys [_this]
-    (nil-on-no-such-key (list-descendants-relative region bucket-name location-key)))
+    (nil-on-no-such-key (list-descendants-relative aws-cli location-key)))
 
   (has-data? [_this]
-    (some #{location-key} (nil-on-no-such-key (list-descendants region bucket-name location-key))))
+    (some #{location-key} (nil-on-no-such-key (list-descendants aws-cli location-key))))
 
   (location-key [_this]
     location-key)
@@ -133,13 +160,13 @@
   (toString [this] (str (uri this))))
 
 (defn ->s3-location
-  [region bucket-name location-key]
-  (S3Location. region bucket-name (strip-slashes location-key)))
+  [aws-cli bucket-name location-key]
+  (S3Location. aws-cli bucket-name (strip-slashes location-key)))
 
-(deftype S3Bucket [bucket-name region]
-    BucketLocation
+(deftype S3Bucket [aws-cli bucket-name]
+  BucketLocation
   (relative [this relative-key]
-    (->s3-location region bucket-name relative-key))
+    (->s3-location aws-cli bucket-name relative-key))
 
   ; Delegate to Amazonica S3 implementation
   (put! [_this _obj]
@@ -155,10 +182,10 @@
     false)
 
   (child-keys [_this]
-    (list-descendants region bucket-name "") )
+    (list-descendants aws-cli ""))
 
   (descendant-keys [_this]
-    (list-descendants region bucket-name "") )
+    (list-descendants aws-cli ""))
 
   (location-key [_this]
     nil)
@@ -170,9 +197,10 @@
   (toString [this] (str (uri this))))
 
 (defn ->s3-bucket
-  [bucket-name]
+  [{:keys [bucket-name profile] :as opts}]
   (let [region (-> (sh "aws" "s3api" "get-bucket-location" "--bucket" bucket-name)
                    :out
                    (json/parse-string keyword)
                    :LocationConstraint)]
-    (S3Bucket. bucket-name region)))
+    (S3Bucket. (BucketAwsCli. bucket-name region profile)
+               bucket-name)))

@@ -16,8 +16,8 @@
       bucket
       (h/relative bucket (.getPath uri)))))
 
-(defn uri->s3-location [uri]
-  (let [bucket (->s3-bucket (.getHost uri))]
+(defn uri->s3-location [uri bucket-name->location]
+  (let [bucket (bucket-name->location (.getHost uri))]
     (if (s/blank? (.getPath uri))
       bucket
       (h/relative bucket (.getPath uri)))))
@@ -39,14 +39,16 @@
 
 (defn ->uri->location
   [& {:keys [memory-bucket-atom
-                                  file-bucket-root]
-                           :or   {memory-bucket-atom (atom {})}}]
+             file-bucket-root
+             bucket-name->s3-location]
+      :or   {memory-bucket-atom       (atom {})
+             bucket-name->s3-location #(->s3-bucket {:bucket-name %})}}]
   (fn [uri]
     (when uri
       (let [^URI uri (->uri uri)]
         (case (s/lower-case (.getScheme uri))
           "mem" (uri->memory-location memory-bucket-atom uri)
-          "s3" (uri->s3-location uri)
+          "s3" (uri->s3-location uri bucket-name->s3-location)
           "file" (uri->file-location file-bucket-root uri)
 
           (throw (UnsupportedOperationException. (str "I don't understand protocol '" (.getScheme uri) "' in uri " uri))))))))
