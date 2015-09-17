@@ -14,6 +14,7 @@
                  [cheshire "5.3.0"]
                  [clj-ssh "0.5.9"]
                  [me.raynes/fs "1.4.5"]]
+  :java-source-paths ["src"]
 
   :profiles {:dev {:dependencies [[midje "1.7.0"]]
                    :plugins [[lein-midje "3.1.0"]]}})
