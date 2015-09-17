@@ -66,14 +66,13 @@
 
 (defprotocol AwsCli
   (ls [this location-key])
-  (ls-recursive [this location-key])
   (cp-up [this from-input-stream to-location-key])
   (cp-down [this from-location-key to-file])
   (rm [this location-key]))
 
 (defn list-descendants
   [aws-cli prefix]
-  (let [{:keys [out]} (ls-recursive aws-cli prefix)]
+  (let [{:keys [out]} (ls aws-cli prefix)]
     (->> (clojure.string/split-lines out)
          (map
            (fn [s]
@@ -96,9 +95,6 @@
 (deftype BucketAwsCli [bucket-name region profile]
   AwsCli
   (ls [_ location-key]
-    (aws-sh "ls" region profile (str "s3://" bucket-name "/" location-key)))
-
-  (ls-recursive [this location-key]
     (aws-sh "ls" region profile (str "s3://" bucket-name "/" location-key) "--recursive"))
 
   (cp-up [_ from-input-stream to-location-key]
