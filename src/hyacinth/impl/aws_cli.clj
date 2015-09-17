@@ -55,11 +55,14 @@
       (assert (re-matches pattern s) (str pattern " does not match '" s "'"))
       (s/replace s pattern (fn [[_ x & _]] x)))))
 
-(defn aws-sh [command region & args]
-  (apply sh "aws" "s3" command (concat (if region ["--region" region] []) args)))
+(defn aws-sh [command region profile & args]
+  (apply sh "aws" "s3" command
+         (concat (when region ["--region" region])
+                 (when profile ["--profile" profile])
+                 args)))
 
-(defn aws-cp [region from to]
-  (aws-sh "cp" region from to))
+(defn aws-cp [region profile from to]
+  (aws-sh "cp" region profile from to))
 
 (defprotocol AwsCli
   (ls [this location-key])
@@ -93,28 +96,28 @@
 (deftype BucketAwsCli [bucket-name region profile]
   AwsCli
   (ls [_ location-key]
-    (aws-sh "ls" region (str "s3://" bucket-name "/" location-key)))
+    (aws-sh "ls" region profile (str "s3://" bucket-name "/" location-key)))
 
   (ls-recursive [this location-key]
-    (aws-sh "ls" region (str "s3://" bucket-name "/" location-key) "--recursive"))
+    (aws-sh "ls" region profile (str "s3://" bucket-name "/" location-key) "--recursive"))
 
   (cp-up [_ from-input-stream to-location-key]
     (throw-no-such-key (str bucket-name "/" to-location-key)
-                       (aws-cp region
+                       (aws-cp region profile
                                from-input-stream
                                (str "s3://" (join-path-forward-slash bucket-name to-location-key)))))
 
   (cp-down [_ from-location-key to-file]
     (let [s3-url (str "s3://" (join-path-forward-slash bucket-name from-location-key))]
       (throw-no-such-key (str bucket-name "/" from-location-key)
-                         (aws-cp region s3-url (.getAbsolutePath to-file)))
+                         (aws-cp region profile s3-url (.getAbsolutePath to-file)))
 
       (io/input-stream to-file)))
 
   (rm [_ location-key]
     (let [s3-url (str "s3://" (join-path-forward-slash bucket-name location-key))]
       ; TODO: This assert is gross.
-      (assert (= 0 (:exit (aws-sh "rm" region s3-url)))))))
+      (assert (= 0 (:exit (aws-sh "rm" region profile s3-url)))))))
 
 (declare ->s3-location)
 
@@ -198,7 +201,9 @@
 
 (defn ->s3-bucket
   [{:keys [bucket-name profile] :as opts}]
-  (let [region (-> (sh "aws" "s3api" "get-bucket-location" "--bucket" bucket-name)
+  (let [region (-> (apply sh (concat ["aws" "s3api"]
+                                     (when profile ["--profile" profile])
+                                     ["get-bucket-location" "--bucket" bucket-name]))
                    :out
                    (json/parse-string keyword)
                    :LocationConstraint)]

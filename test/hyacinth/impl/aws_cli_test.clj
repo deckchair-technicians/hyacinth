@@ -33,6 +33,7 @@
 
 (when @props
   (facts "aws cli buckets work"
+    (clojure.pprint/pprint @props)
     (check-contract (->s3-bucket @props)
                     (->uri->location :bucket-name->s3-location
                                      (fn [bucket-name]
