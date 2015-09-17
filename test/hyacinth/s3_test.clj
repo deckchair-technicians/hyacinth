@@ -91,10 +91,6 @@
           "SignedHeaders=content-type;host;x-amz-date, "
           "Signature=ced6826de92d2bdeed8f846f0bf508e8559e98e4b0199114b84c54174deb456c"))
 
-(defn authorize [request access-key secret-key region service]
-  (assoc-in request [:headers "Authorization"]
-            (authorization-header (normalise-headers example-request) access-key secret-key region service)))
-
 (fact "authorize"
   ; See http://docs.aws.amazon.com/general/latest/gr/sigv4-add-signature-to-request.html
   (-> (authorize example-request "AKIDEXAMPLE" "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY" "us-east-1" "iam")

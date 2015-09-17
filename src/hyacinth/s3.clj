@@ -117,3 +117,8 @@
        access-key "/" (credential-scope (request-date-stamp request) region service) ", "
        "SignedHeaders=" (signed-headers (:headers request)) ", "
        "Signature=" (signature request secret-key region service)))
+
+(defn authorize [request access-key secret-key region service]
+  (assoc-in request [:headers "Authorization"]
+            (authorization-header (normalise-headers request) access-key secret-key region service)))
+
