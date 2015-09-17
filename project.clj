@@ -1,9 +1,5 @@
 (defproject technology.theorem/hyacinth "DEV"
 
-  :repositories [["theorem-repo" {:url "s3://theorem-repo/repo"
-                                  :username [:gpg :env/aws_access_key_id]
-                                  :passphrase [:gpg :env/aws_secret_access_key]}]]
-
   :description "Bucket abstraction over S3, FTP, file, memory map"
 
   :plugins [[s3-wagon-private "1.2.0"]
