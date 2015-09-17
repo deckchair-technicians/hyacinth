@@ -5,6 +5,7 @@ package hyacinth.aws;
  * 1) Encode space as usual
  * 2) Encode '*' as usual
  * 3) Do not encode '~'
+ * 4) Removed dependency on sun JVM's AccessController and GetPropertyAction and hard coded encoding to UTF8
  *
  * Copyright 1995-2006 Sun Microsystems, Inc.  All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -30,15 +31,11 @@ package hyacinth.aws;
  * have any questions.
  */
 
-
-import sun.security.action.GetPropertyAction;
-
 import java.io.CharArrayWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
-import java.security.AccessController;
 import java.util.BitSet;
 
 /**
@@ -140,9 +137,7 @@ public class URLEncoder {
 		dontNeedEncoding.set('.');
 		dontNeedEncoding.set('~');
 
-		dfltEncName = AccessController.doPrivileged(
-				new GetPropertyAction("file.encoding")
-		);
+		dfltEncName = "UTF-8";
 	}
 
 	/**
