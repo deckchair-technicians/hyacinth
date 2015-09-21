@@ -2,11 +2,12 @@
   (:require [midje.sweet :refer :all]
             [clojure.string :as string])
 
-  (:import [hyacinth.aws URLEncoder]
+  (:import [hyacinth.aws URLEncoder URIEncoder]
            [java.security MessageDigest]
            [javax.crypto Mac]
            [javax.crypto.spec SecretKeySpec]
-           [clojure.lang IPersistentMap]))
+           [clojure.lang IPersistentMap]
+           (java.net URI)))
 
 (defn normalise-headers [request]
   (assoc request :headers (->> (:headers request)
@@ -62,9 +63,17 @@
       (.digest)
       (bytes->hex)))
 
+(defn canonical-uri [url]
+  (let [p (.getPath (URI. url))]
+      (if (or (= p "/") (string/blank? p))
+        "/"
+        (->> (string/split p #"/")
+             (map #(URIEncoder/encode %))
+             (string/join "/")))))
+
 (defn canonical-request [{:keys [method url query-params headers body]}]
   (str (string/upper-case (name method)) "\n"
-       (or (re-find #"(?:http://)[^?]+" url) "/") "\n"
+       (canonical-uri url) "\n"
        (canonical-query-string query-params) "\n"
        (canonical-headers headers) "\n"
        (signed-headers headers) "\n"

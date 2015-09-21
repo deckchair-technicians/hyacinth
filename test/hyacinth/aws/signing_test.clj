@@ -33,6 +33,21 @@
   (fact "returns the hash of the empty string if body is nil"
     (hex-sha256-hash nil) => "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"))
 
+(facts "canonical-uri"
+  (fact "works with https urls"
+    (canonical-uri "https://bucket-name.amazonaws.com/some-key") => "/some-key")
+  (fact "works with http urls"
+    (canonical-uri "http://bucket-name.amazonaws.com/some-key") => "/some-key")
+  (fact "works with urls with query string"
+    (canonical-uri "http://bucket-name.amazonaws.com/some-key?version=1") => "/some-key")
+  (fact "works with empty paths"
+    (canonical-uri "http://bucket-name.amazonaws.com") => "/")
+  (fact "works with paths including characters that need endcoding"
+    (canonical-uri "http://bucket-name.amazonaws.com/%20") => "/%20")
+  (fact "works with paths including reserved uri characters"
+    (canonical-uri "http://bucket-name.amazonaws.com/%7E") => "/~")
+  (fact "works with paths including reserved uri characters"
+    (canonical-uri "/foo.txt") => "/foo.txt"))
 
 (def example-request
   {:method  :post
