@@ -46,7 +46,7 @@
     (canonical-uri "http://bucket-name.amazonaws.com/%20") => "/%20")
   (fact "works with paths including reserved uri characters"
     (canonical-uri "http://bucket-name.amazonaws.com/%7E") => "/~")
-  (fact "works with paths including reserved uri characters"
+  (fact "works with absolute paths"
     (canonical-uri "/foo.txt") => "/foo.txt"))
 
 (def example-request
