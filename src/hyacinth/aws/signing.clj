@@ -58,7 +58,7 @@
   )
 (defn hex-sha256-hash [^String body]
   (-> (MessageDigest/getInstance "SHA-256")
-      (doto (.update (.getBytes body "UTF8")))
+      (doto (.update (if body (.getBytes body "UTF8") (byte-array 0))))
       (.digest)
       (bytes->hex)))
 

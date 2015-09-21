@@ -29,6 +29,10 @@
   (fact "does not trim quoted strings"
     (trim-header-value "\"a     b\"") => "\"a     b\""))
 
+(facts "hex-sha256-hash"
+  (fact "returns the hash of the empty string if body is nil"
+    (hex-sha256-hash nil) => "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"))
+
 
 (def example-request
   {:method  :post
