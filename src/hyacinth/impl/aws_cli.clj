@@ -7,19 +7,12 @@
             [cheshire.core :as json]
 
             [hyacinth
-             [util :refer [with-temp-dir to-file strip-slashes]]
+             [util :refer [with-temp-dir to-file strip-slashes join-path-forward-slash]]
              [protocol :refer :all]])
 
   (:import (java.io File IOException)
            [clojure.lang ExceptionInfo]
            [java.net URI]))
-
-(defn join-path-forward-slash [^String path & paths]
-  (reduce
-    (fn [path-left path-right]
-      (clojure.string/replace (str path-left "/" path-right) #"/+" "/"))
-    path
-    paths))
 
 (defn sh [& args]
   (let [result (apply shell/sh args)]

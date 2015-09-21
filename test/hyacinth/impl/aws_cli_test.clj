@@ -7,13 +7,6 @@
             [hyacinth.impl.aws-cli :refer :all])
   (:import [java.util Properties]))
 
-(facts "Path joining with forward-slash"
-
-  (join-path-forward-slash "a") => "a"
-  (join-path-forward-slash "a" "b" "c") => "a/b/c"
-  (join-path-forward-slash "a/" "b/" "/c") => "a/b/c"
-  (join-path-forward-slash "a////" "b/" "/c") => "a/b/c")
-
 (defn load-properties [url]
   (doto (Properties.)
     (.load (io/input-stream url))))

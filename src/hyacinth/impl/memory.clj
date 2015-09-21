@@ -3,9 +3,9 @@
             [clojure.string :as s]
 
             [hyacinth
-             [util :refer [dissoc-in*]]
+             [util :refer [dissoc-in* join-path-forward-slash]]
              [protocol :refer :all]])
-  (:import (java.io File ByteArrayOutputStream ByteArrayInputStream IOException)
+  (:import (java.io ByteArrayOutputStream ByteArrayInputStream IOException)
            [java.net URI]))
 
 (defn split-path [path]
@@ -53,7 +53,7 @@
         (get-descendant-keys (get-in @buckets-atom key-path)))
 
       (relative [this relative-key]
-        (memory-location buckets-atom (.getPath (File. path ^String relative-key))))
+        (memory-location buckets-atom (join-path-forward-slash path relative-key)))
 
       (has-data? [this]
         (instance? (Class/forName "[B") (get-in @buckets-atom key-path)))
@@ -92,7 +92,7 @@
 
     (relative [this relative-key]
       (assert relative-key)
-      (memory-location buckets-atom (.getPath (File. bucket-name relative-key))))
+      (memory-location buckets-atom (join-path-forward-slash bucket-name relative-key)))
 
     (location-key [this]
       nil)
