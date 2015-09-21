@@ -49,6 +49,11 @@
   (fact "works with absolute paths"
     (canonical-uri "/foo.txt") => "/foo.txt"))
 
+(facts "hex-sha256-hash"
+  (fact "leading 0s are kept"
+    (hex-sha256-hash "f9e61028-611d-463c-9d29-958428733373")
+    => "026545f810a1ae2e990ac6ab6a13e3e7c88383f472fb9d4e9166bcf34fc62704"))
+
 (def example-request
   {:method  :post
    :url     "https://iam.amazonaws.com/"

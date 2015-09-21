@@ -7,7 +7,7 @@
            [javax.crypto Mac]
            [javax.crypto.spec SecretKeySpec]
            [clojure.lang IPersistentMap]
-           (java.net URI)))
+           [java.net URI]))
 
 (defn normalise-headers [request]
   (assoc request :headers (->> (:headers request)
@@ -52,11 +52,16 @@
 (defn positive-biginteger [#^bytes bytes]
   (BigInteger. 1 bytes))
 
+(defn left-pad [^String s n p]
+  (str (string/join "" (take (- n (.length s)) (repeat p)))
+       s))
+
 (defn bytes->hex [#^bytes bytes]
   (-> bytes
       (positive-biginteger)
-      (.toString 16))
-  )
+      (.toString 16)
+      (left-pad 64 "0")))
+
 (defn hex-sha256-hash [^String body]
   (-> (MessageDigest/getInstance "SHA-256")
       (doto (.update (if body (.getBytes body "UTF8") (byte-array 0))))
