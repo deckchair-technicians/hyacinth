@@ -1,6 +1,6 @@
-(ns hyacinth.s3-test
+(ns hyacinth.aws.signing-test
   (:require [midje.sweet :refer :all]
-            [hyacinth.s3 :refer :all]))
+            [hyacinth.aws.signing :refer :all]))
 
 (facts "canonical-query-string"
   (fact "leaves A-Z a-z 0-9 '-' and '_'  unencoded (just like Java URLEncoder)"

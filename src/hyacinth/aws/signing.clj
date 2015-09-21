@@ -1,7 +1,6 @@
-(ns hyacinth.s3
+(ns hyacinth.aws.signing
   (:require [midje.sweet :refer :all]
-            [clojure.string :as string]
-            [hyacinth.s3 :refer :all])
+            [clojure.string :as string])
 
   (:import [hyacinth.aws URLEncoder]
            [java.security MessageDigest]
