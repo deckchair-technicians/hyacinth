@@ -7,7 +7,8 @@
            [javax.crypto Mac]
            [javax.crypto.spec SecretKeySpec]
            [clojure.lang IPersistentMap]
-           [java.net URI]))
+           [java.net URI]
+           [java.util Base64]))
 
 (defn normalise-headers [request]
   (assoc request :headers (->> (:headers request)
@@ -56,6 +57,11 @@
   (str (string/join "" (take (- n (.length s)) (repeat p)))
        s))
 
+(defn digest [s algorithm]
+  (-> (MessageDigest/getInstance algorithm)
+      (doto (.update #^bytes (if s (.getBytes s "UTF8") (byte-array 0))))
+      (.digest)))
+
 (defn bytes->hex [#^bytes bytes]
   (-> bytes
       (positive-biginteger)
@@ -63,10 +69,16 @@
       (left-pad 64 "0")))
 
 (defn hex-sha256-hash [^String body]
-  (-> (MessageDigest/getInstance "SHA-256")
-      (doto (.update (if body (.getBytes body "UTF8") (byte-array 0))))
-      (.digest)
+  (-> (digest body "SHA-256")
       (bytes->hex)))
+
+(defn bytes->base-64 [#^bytes bytes]
+  (-> (Base64/getEncoder)
+      (.encodeToString bytes)))
+
+(defn base64-md5-hash [body]
+  (-> (digest body "MD5")
+      (bytes->base-64)))
 
 (defn canonical-uri [url]
   (let [p (.getPath (URI. url))]
