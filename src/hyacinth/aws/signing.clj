@@ -19,7 +19,7 @@
   (->> query-params
        (map (fn [[k v]]
               [(name k) v]))
-       (sort first)
+       (sort-by first)
        (map (fn [[k v]]
               (str (URLEncoder/encode k)
                    "="
@@ -70,11 +70,11 @@
 
 (defn canonical-uri [url]
   (let [p (.getPath (URI. url))]
-      (if (or (= p "/") (string/blank? p))
-        "/"
-        (->> (string/split p #"/")
-             (map #(URIEncoder/encode %))
-             (string/join "/")))))
+    (if (or (= p "/") (string/blank? p))
+      "/"
+      (->> (string/split p #"/")
+           (map #(URIEncoder/encode %))
+           (string/join "/")))))
 
 (defn canonical-request [{:keys [method url query-params headers body]}]
   (str (string/upper-case (name method)) "\n"

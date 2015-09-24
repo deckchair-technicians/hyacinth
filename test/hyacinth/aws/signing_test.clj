@@ -17,7 +17,11 @@
 
   (fact "encodes other characters (like Java URLEncoder)"
     (canonical-query-string {"Some-HEAder" "[]{}"})
-    => "Some-HEAder=%5B%5D%7B%7D"))
+    => "Some-HEAder=%5B%5D%7B%7D")
+
+  (fact "Sorts parameters by name"
+    (canonical-query-string {:b "3" :B "1" :a "2" })
+    => "B=1&a=2&b=3"))
 
 (facts "trim-header-value"
   (fact "trims start and end space"
