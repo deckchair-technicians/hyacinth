@@ -9,8 +9,6 @@
 
 (def props (test-support/props "donotcheckin/s3.http.properties"))
 
-(def http-aws (apply ->s3-http ((juxt :bucket-name :access-key :secret-key) @props)))
-
 (defn stream->list-objects-keys [s]
   (-> s
       (xml/parse)
@@ -29,71 +27,72 @@
          (multi-object-delete! ~http-aws ~var)))))
 
 (when @props
-  (fact "get-region"
-    (apply get-region ((juxt :bucket-name :access-key :secret-key) @props))
-    => (:expected-bucket-region @props))
+  (let [s3-http (apply ->s3-http ((juxt :bucket-name :access-key :secret-key) @props))]
+    (fact "get-region"
+      (apply get-region ((juxt :bucket-name :access-key :secret-key) @props))
+      => (:expected-bucket-region @props))
 
 
-  (facts "put, get, delete"
-    (let [body (str (UUID/randomUUID))]
-      (with-temporary-location [location-key http-aws]
-        (fact "put works"
-          (put-object! http-aws location-key body)
-          => (contains {:status 200}))
+    (facts "put, get, delete"
+      (let [body (str (UUID/randomUUID))]
+        (with-temporary-location [location-key s3-http]
+          (fact "put works"
+            (put-object! s3-http location-key body)
+            => (contains {:status 200}))
 
-        (fact "get works"
-          (slurp (:body (get-object http-aws location-key)))
-          => body)
+          (fact "get works"
+            (slurp (:body (get-object s3-http location-key)))
+            => body)
 
-        (fact "delete works"
-          (delete-object! http-aws location-key)
-          => (contains {:status 204}))
+          (fact "delete works"
+            (delete-object! s3-http location-key)
+            => (contains {:status 204}))
 
-        (fact "delete definitely works"
-          (get-object http-aws location-key)
-          => (contains {:status 404})))))
+          (fact "delete definitely works"
+            (get-object s3-http location-key)
+            => (contains {:status 404})))))
 
-  (facts "list-objects"
-    (let [body        (str (UUID/randomUUID))
-          descendants ["/1/1.1/1.1.1"
-                       "/1/1.1/1.1.2"
-                       "/1/1.2/1.2.1"
-                       "/2/2.1"]]
-      (with-temporary-location [parent-key http-aws]
-        (fact "putting test files works"
-          (doseq [k descendants]
-            (put-object! http-aws (str parent-key k) body)))
+    (facts "list-objects"
+      (let [body        (str (UUID/randomUUID))
+            descendants ["/1/1.1/1.1.1"
+                         "/1/1.1/1.1.2"
+                         "/1/1.2/1.2.1"
+                         "/2/2.1"]]
+        (with-temporary-location [parent-key s3-http]
+          (fact "putting test files works"
+            (doseq [k descendants]
+              (put-object! s3-http (str parent-key k) body)))
 
-        (fact "list works for all descendants"
-          (-> (list-objects http-aws parent-key)
-              (update-in [:body] stream->list-objects-keys))
-          => (matches {:status 200
-                       :body   (vs/in-order (map #(str parent-key %) descendants))}))
+          (fact "list works for all descendants"
+            (-> (list-objects s3-http parent-key)
+                (update-in [:body] stream->list-objects-keys))
+            => (matches {:status 200
+                         :body   (vs/in-order (map #(str parent-key %) descendants))}))
 
-        (fact "list works for leaf node children"
-          (let [prefix (str parent-key "/1/1.1")]
-            (-> (list-objects http-aws prefix "/")
-                (update-in [:body] #(stream->list-objects-common-prefixes % prefix))))
-          => (matches {:status 200
-                       :body   (vs/in-order ["1.1.1" "1.1.2"])}))
+          (fact "list works for leaf node children"
+            (let [prefix (str parent-key "/1/1.1")]
+              (-> (list-objects s3-http prefix "/")
+                  (update-in [:body] #(stream->list-objects-common-prefixes % prefix))))
+            => (matches {:status 200
+                         :body   (vs/in-order ["1.1.1" "1.1.2"])}))
 
-        (fact "list works for children with trailing slash"
-          (let [prefix (str parent-key "/1/")]
-            (-> (list-objects http-aws prefix "/")
-                (update-in [:body] #(stream->list-objects-common-prefixes % prefix))))
-          => (matches {:status 200
-                       :body   (vs/in-order ["1.1" "1.2"])}))
+          (fact "list works for children with trailing slash"
+            (let [prefix (str parent-key "/1/")]
+              (-> (list-objects s3-http prefix "/")
+                  (update-in [:body] #(stream->list-objects-common-prefixes % prefix))))
+            => (matches {:status 200
+                         :body   (vs/in-order ["1.1" "1.2"])}))
 
-        (fact "list works without trailing slash"
-          (let [prefix (str parent-key "/1")]
-            (-> (list-objects http-aws prefix "/")
-                (update-in [:body] #(stream->list-objects-common-prefixes % prefix))))
-          => (matches {:status 200
-                       :body   (vs/in-order ["1.1" "1.2"])}))
+          (fact "list works without trailing slash"
+            (let [prefix (str parent-key "/1")]
+              (-> (list-objects s3-http prefix "/")
+                  (update-in [:body] #(stream->list-objects-common-prefixes % prefix))))
+            => (matches {:status 200
+                         :body   (vs/in-order ["1.1" "1.2"])}))
 
-        (fact "list works with leading slash"
-          (let [prefix (str "/" parent-key "/1")]
-            (-> (list-objects http-aws prefix "/")
-                (update-in [:body] #(stream->list-objects-common-prefixes % prefix))))
-          => (matches {:status 200
-                       :body   (vs/in-order ["1.1" "1.2"])}))))))
+          (fact "list works with leading slash"
+            (let [prefix (str "/" parent-key "/1")]
+              (-> (list-objects s3-http prefix "/")
+                  (update-in [:body] #(stream->list-objects-common-prefixes % prefix))))
+            => (matches {:status 200
+                         :body   (vs/in-order ["1.1" "1.2"])})))))))
