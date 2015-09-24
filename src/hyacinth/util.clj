@@ -38,10 +38,7 @@
     {}))
 
 
-(defn join-paths [& paths]
-  (reduce #(.getPath (File. %1 %2)) paths))
-
-(defn join-path-forward-slash [^String path & paths]
+(defn join-paths [^String path & paths]
   (reduce
     (fn [path-left path-right]
       (clojure.string/replace (str path-left "/" path-right) #"/+" "/"))

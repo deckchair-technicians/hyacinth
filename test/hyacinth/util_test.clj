@@ -4,7 +4,7 @@
 
 (facts "Path joining with forward-slash"
 
-  (join-path-forward-slash "a") => "a"
-  (join-path-forward-slash "a" "b" "c") => "a/b/c"
-  (join-path-forward-slash "a/" "b/" "/c") => "a/b/c"
-  (join-path-forward-slash "a////" "b/" "/c") => "a/b/c")
+  (join-paths "a") => "a"
+  (join-paths "a" "b" "c") => "a/b/c"
+  (join-paths "a/" "b/" "/c") => "a/b/c"
+  (join-paths "a////" "b/" "/c") => "a/b/c")

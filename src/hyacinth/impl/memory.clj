@@ -3,7 +3,7 @@
             [clojure.string :as s]
 
             [hyacinth
-             [util :refer [dissoc-in* join-path-forward-slash]]
+             [util :refer [dissoc-in* join-paths]]
              [protocol :refer :all]])
   (:import (java.io ByteArrayOutputStream ByteArrayInputStream IOException)
            [java.net URI]))
@@ -53,7 +53,7 @@
         (get-descendant-keys (get-in @buckets-atom key-path)))
 
       (relative [this relative-key]
-        (memory-location buckets-atom (join-path-forward-slash path relative-key)))
+        (memory-location buckets-atom (join-paths path relative-key)))
 
       (has-data? [this]
         (instance? (Class/forName "[B") (get-in @buckets-atom key-path)))
@@ -92,7 +92,7 @@
 
     (relative [this relative-key]
       (assert relative-key)
-      (memory-location buckets-atom (join-path-forward-slash bucket-name relative-key)))
+      (memory-location buckets-atom (join-paths bucket-name relative-key)))
 
     (location-key [this]
       nil)

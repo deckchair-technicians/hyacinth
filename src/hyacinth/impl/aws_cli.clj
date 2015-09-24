@@ -2,7 +2,7 @@
   (:require
     [cheshire.core :as json]
     [hyacinth
-     [util :refer [with-temp-dir to-file strip-slashes join-path-forward-slash]]
+     [util :refer [with-temp-dir to-file strip-slashes join-paths]]
      [protocol :refer :all]]
     [hyacinth.aws.cli :refer :all])
 
@@ -27,7 +27,7 @@
       (cp-down aws-cli location-key (File. ^File dir "forstreaming"))))
 
   (relative [_this relative-key]
-    (->s3-location aws-cli bucket-name (join-path-forward-slash location-key relative-key)))
+    (->s3-location aws-cli bucket-name (join-paths location-key relative-key)))
 
   (delete! [this]
     (when (has-data? this)

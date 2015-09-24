@@ -3,7 +3,7 @@
              [shell :as shell]
              [io :as io]]
             [hyacinth
-             [util :refer [strip-slashes join-path-forward-slash]]]
+             [util :refer [strip-slashes join-paths]]]
             [clojure.string :as s])
   (:import (clojure.lang ExceptionInfo)
            (java.io IOException File)))
@@ -70,17 +70,17 @@
     (throw-no-such-key (str bucket-name "/" to-location-key)
                        (aws-cp region profile
                                from-input-stream
-                               (str "s3://" (join-path-forward-slash bucket-name to-location-key)))))
+                               (str "s3://" (join-paths bucket-name to-location-key)))))
 
   (cp-down [_ from-location-key to-file]
-    (let [s3-url (str "s3://" (join-path-forward-slash bucket-name from-location-key))]
+    (let [s3-url (str "s3://" (join-paths bucket-name from-location-key))]
       (throw-no-such-key (str bucket-name "/" from-location-key)
                          (aws-cp region profile s3-url (.getAbsolutePath ^File to-file)))
 
       (io/input-stream to-file)))
 
   (rm [_ location-key]
-    (let [s3-url (str "s3://" (join-path-forward-slash bucket-name location-key))]
+    (let [s3-url (str "s3://" (join-paths bucket-name location-key))]
       ; TODO: This assert is gross.
       (assert (= 0 (:exit (aws-sh "rm" region profile s3-url)))))))
 
