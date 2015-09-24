@@ -45,13 +45,20 @@
     path
     paths))
 
-(defn parent [path]
-  (.getParent (if (instance? File path)
-                path
-                (File. path))))
-
-(defn filename [path]
-  (.getName (File. path)))
-
 (defn strip-slashes [s]
   (s/replace s #"^/|/$" ""))
+
+(defn remove-leading-slash [s]
+  (if (.startsWith s "/")
+    (.substring s 1)
+    s))
+
+(defn remove-trailing-slash [s]
+  (if (.endsWith s "/")
+    (.substring s 0 (dec (.length s)))
+    s))
+
+(defn trailing-slash [s]
+  (if (.endsWith s "/")
+    s
+    (str s "/")))
