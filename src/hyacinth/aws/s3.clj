@@ -66,7 +66,8 @@
     (-> (basic-s3-request bucket-name "" :get)
         (merge-requests
           {:query-params {:prefix (-> location-key
-                                      (util/remove-leading-slash))}})
+                                      (util/remove-leading-slash)
+                                      (util/remove-trailing-slash))}})
         (handler)))
 
   (list-objects [_this location-key delimiter]
