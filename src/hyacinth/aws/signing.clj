@@ -1,6 +1,5 @@
 (ns hyacinth.aws.signing
-  (:require [midje.sweet :refer :all]
-            [clojure.string :as string])
+  (:require [clojure.string :as string])
 
   (:import [hyacinth.aws URLEncoder URIEncoder]
            [java.security MessageDigest]
@@ -146,4 +145,3 @@
 (defn authorize [request access-key secret-key region service]
   (assoc-in request [:headers "Authorization"]
             (authorization-header (normalise-headers request) access-key secret-key region service)))
-
