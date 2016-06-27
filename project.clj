@@ -1,4 +1,4 @@
-(defproject deckchair-technicians/hyacinth "DEV"
+(defproject deckchair-technicians/hyacinth "1"
 
   :description "Bucket abstraction over S3, FTP, file, memory map"
 
